@@ -306,33 +306,17 @@ Arduino VIN → L298N 5V Output (or separate 9V battery)
 
 Features of This Code:
 Intelligent Avoidance: Checks both sides before deciding turn direction
-
 Speed Control: Uses PWM for smooth speed adjustments
-
 Safety Features:
-
 Emergency reverse when too close
-
 Stop before turning
-
 Gradual speed reduction
-
 Serial Monitoring: Debugging output via Serial Monitor
-
 Modular Functions: Easy to modify and expand
-
 Testing and Calibration:
 Upload the code to Arduino
-
 Open Serial Monitor (9600 baud)
-
 Adjust safeDistance variable based on your environment
-
 Test on different surfaces
-
 Fine-tune turn durations and speeds
-
 This code provides a robust foundation for an obstacle-avoiding robot. You can expand it with additional features like Bluetooth control, line following, or autonomous navigation.
-
-
-
