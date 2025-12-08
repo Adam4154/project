@@ -1,0 +1,338 @@
+Project name: Obstacle Avoiding Smart robotic car
+
+Basic Obstacle Avoiding Robot Car:
+
+Components Needed:
+Arduino UNO/Nano
+HC-SR04 Ultrasonic Sensor
+L298N Motor Driver
+4 DC Motors with wheels
+9V Battery + 4xAA Battery Holder
+Chassis kit
+Jumper wires
+
+Complete Arduino Code:
+
+// Pin Definitions
+// Ultrasonic Sensor
+const int trigPin = 9;
+const int echoPin = 10;
+
+// Motor Driver Pins
+// Left Motor
+const int leftMotorForward = 7;
+const int leftMotorBackward = 6;
+const int leftMotorSpeed = 5;  // PWM pin
+
+// Right Motor
+const int rightMotorForward = 4;
+const int rightMotorBackward = 3;
+const int rightMotorSpeed = 2;  // PWM pin
+
+// Parameters
+const int safeDistance = 30;  // Minimum distance in cm
+const int mediumDistance = 50; // Medium distance in cm
+const int turnSpeed = 150;     // Speed during turns (0-255)
+const int forwardSpeed = 180;  // Speed when moving forward (0-255)
+
+// Variables
+long duration;
+int distance;
+
+void setup() {
+  // Initialize Serial Monitor for debugging
+  Serial.begin(9600);
+  
+  // Set motor pins as OUTPUT
+  pinMode(leftMotorForward, OUTPUT);
+  pinMode(leftMotorBackward, OUTPUT);
+  pinMode(leftMotorSpeed, OUTPUT);
+  
+  pinMode(rightMotorForward, OUTPUT);
+  pinMode(rightMotorBackward, OUTPUT);
+  pinMode(rightMotorSpeed, OUTPUT);
+  
+  // Set ultrasonic sensor pins
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  
+  // Initial stop
+  stopCar();
+  
+  Serial.println("Obstacle Avoiding Robot Car Started!");
+  delay(2000); // Wait before starting
+}
+
+void loop() {
+  distance = getDistance();
+  Serial.print("Distance: ");
+  Serial.println(distance);
+  
+  // Decision Making Logic
+  if (distance > safeDistance) {
+    // No obstacle detected
+    if (distance > mediumDistance) {
+      // Clear path ahead
+      moveForward(forwardSpeed);
+    } else {
+      // Path is getting narrow, slow down
+      moveForward(forwardSpeed - 50);
+    }
+  } 
+  else if (distance <= safeDistance && distance > 15) {
+    // Obstacle detected, decide which way to turn
+    avoidObstacle();
+  }
+  else if (distance <= 15) {
+    // Too close, move backward first
+    emergencyReverse();
+  }
+  
+  delay(50); // Small delay between readings
+}
+
+// Function to get distance from ultrasonic sensor
+int getDistance() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  
+  duration = pulseIn(echoPin, HIGH);
+  distance = duration * 0.034 / 2; // Convert to cm
+  
+  return distance;
+}
+
+// Obstacle avoidance algorithm
+void avoidObstacle() {
+  Serial.println("Obstacle detected! Avoiding...");
+  
+  // Stop the car
+  stopCar();
+  delay(500);
+  
+  // Move backward a little
+  moveBackward(150);
+  delay(300);
+  stopCar();
+  delay(500);
+  
+  // Check left and right distances
+  int leftDistance = checkSideDistance("left");
+  delay(200);
+  int rightDistance = checkSideDistance("right");
+  delay(200);
+  
+  Serial.print("Left Distance: ");
+  Serial.println(leftDistance);
+  Serial.print("Right Distance: ");
+  Serial.println(rightDistance);
+  
+  // Decide which way to turn
+  if (leftDistance > rightDistance && leftDistance > safeDistance) {
+    Serial.println("Turning LEFT");
+    turnLeft(turnSpeed);
+    delay(400); // Turn for a specific time
+  } 
+  else if (rightDistance > safeDistance) {
+    Serial.println("Turning RIGHT");
+    turnRight(turnSpeed);
+    delay(400); // Turn for a specific time
+  }
+  else {
+    // Both sides blocked, try 180 degree turn
+    Serial.println("Both sides blocked, turning 180");
+    turnRight(turnSpeed);
+    delay(800);
+  }
+  
+  stopCar();
+  delay(500);
+}
+
+// Check distance on either side (simulated by turning)
+int checkSideDistance(String side) {
+  if (side == "left") {
+    // Turn left briefly and measure
+    turnLeft(100);
+    delay(100);
+    stopCar();
+    delay(200);
+  } else {
+    // Turn right briefly and measure
+    turnRight(100);
+    delay(100);
+    stopCar();
+    delay(200);
+  }
+  
+  return getDistance();
+}
+
+void emergencyReverse() {
+  Serial.println("TOO CLOSE! Emergency Reverse!");
+  moveBackward(200);
+  delay(500);
+  stopCar();
+  delay(500);
+}
+
+// Motor Control Functions
+void moveForward(int speed) {
+  digitalWrite(leftMotorForward, HIGH);
+  digitalWrite(leftMotorBackward, LOW);
+  digitalWrite(rightMotorForward, HIGH);
+  digitalWrite(rightMotorBackward, LOW);
+  analogWrite(leftMotorSpeed, speed);
+  analogWrite(rightMotorSpeed, speed);
+}
+
+void moveBackward(int speed) {
+  digitalWrite(leftMotorForward, LOW);
+  digitalWrite(leftMotorBackward, HIGH);
+  digitalWrite(rightMotorForward, LOW);
+  digitalWrite(rightMotorBackward, HIGH);
+  analogWrite(leftMotorSpeed, speed);
+  analogWrite(rightMotorSpeed, speed);
+}
+
+void turnLeft(int speed) {
+  digitalWrite(leftMotorForward, LOW);
+  digitalWrite(leftMotorBackward, HIGH);
+  digitalWrite(rightMotorForward, HIGH);
+  digitalWrite(rightMotorBackward, LOW);
+  analogWrite(leftMotorSpeed, speed);
+  analogWrite(rightMotorSpeed, speed);
+}
+
+void turnRight(int speed) {
+  digitalWrite(leftMotorForward, HIGH);
+  digitalWrite(leftMotorBackward, LOW);
+  digitalWrite(rightMotorForward, LOW);
+  digitalWrite(rightMotorBackward, HIGH);
+  analogWrite(leftMotorSpeed, speed);
+  analogWrite(rightMotorSpeed, speed);
+}
+
+void stopCar() {
+  digitalWrite(leftMotorForward, LOW);
+  digitalWrite(leftMotorBackward, LOW);
+  digitalWrite(rightMotorForward, LOW);
+  digitalWrite(rightMotorBackward, LOW);
+  analogWrite(leftMotorSpeed, 0);
+  analogWrite(rightMotorSpeed, 0);
+}
+
+Enhanced Version with Multiple Sensors
+For better performance, you can use 3 ultrasonic sensors (left, front, right):
+
+// Multi-sensor version
+const int trigFront = 9;
+const int echoFront = 10;
+const int trigLeft = 11;
+const int echoLeft = 12;
+const int trigRight = 7;
+const int echoRight = 8;
+
+void setup() {
+  // Additional sensor pins
+  pinMode(trigLeft, OUTPUT);
+  pinMode(echoLeft, INPUT);
+  pinMode(trigRight, OUTPUT);
+  pinMode(echoRight, INPUT);
+}
+
+void loop() {
+  int frontDist = getDistance(trigFront, echoFront);
+  int leftDist = getDistance(trigLeft, echoLeft);
+  int rightDist = getDistance(trigRight, echoRight);
+  
+  // Improved decision algorithm
+  if (frontDist > safeDistance) {
+    moveForward(forwardSpeed);
+  } else {
+    stopCar();
+    delay(300);
+    
+    if (leftDist > rightDist && leftDist > safeDistance) {
+      turnLeft(turnSpeed);
+      delay(400);
+    } else if (rightDist > safeDistance) {
+      turnRight(turnSpeed);
+      delay(400);
+    } else {
+      moveBackward(200);
+      delay(500);
+      turnRight(turnSpeed);
+      delay(600);
+    }
+  }
+}
+
+int getDistance(int trig, int echo) {
+  digitalWrite(trig, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trig, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trig, LOW);
+  
+  duration = pulseIn(echo, HIGH);
+  return duration * 0.034 / 2;
+}
+
+Wiring Instructions:
+L298N Motor Driver Connections:
+
+Left Motor  → OUT1 & OUT2
+Right Motor → OUT3 & OUT4
+ENA → Pin 5 (PWM)
+ENB → Pin 2 (PWM)
+IN1 → Pin 7
+IN2 → Pin 6
+IN3 → Pin 4
+IN4 → Pin 3
+
+HC-SR04 Connections:
+VCC  → Arduino 5V
+GND  → Arduino GND
+TRIG → Pin 9
+ECHO → Pin 10
+
+Power Connections:
+12V Battery → L298N 12V Input
+Arduino VIN → L298N 5V Output (or separate 9V battery)
+
+Features of This Code:
+Intelligent Avoidance: Checks both sides before deciding turn direction
+
+Speed Control: Uses PWM for smooth speed adjustments
+
+Safety Features:
+
+Emergency reverse when too close
+
+Stop before turning
+
+Gradual speed reduction
+
+Serial Monitoring: Debugging output via Serial Monitor
+
+Modular Functions: Easy to modify and expand
+
+Testing and Calibration:
+Upload the code to Arduino
+
+Open Serial Monitor (9600 baud)
+
+Adjust safeDistance variable based on your environment
+
+Test on different surfaces
+
+Fine-tune turn durations and speeds
+
+This code provides a robust foundation for an obstacle-avoiding robot. You can expand it with additional features like Bluetooth control, line following, or autonomous navigation.
+
+
+
